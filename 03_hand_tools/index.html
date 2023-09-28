@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<title>PS70: Intro to Digital Fabrication </title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="../style.css" rel="stylesheet">
+<link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Tangerine">
+
+
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div style="align-items: left; justify-content:left;" class="container-fluid">
+    <h3 class="nav-title"> PS70: Intro to Digital Fabrication</h3>
+    <div class="navbar-nav">
+      <h4></h4>
+      <h4><a class="nav-link" href="../index.html">Home</a></h4>
+      <h4><a class="nav-link" href="../about.html">About</a></h4>
+    </div>
+  </div>
+</nav>
+
+<body>
+
+
+<xmp style="display:none;">
+<br> 
+
+#### Week 3: Hands Tools & Fabrication
+<h2 style="font-weight: bold;">Kinetic Sculpture</h2>
+<h3 style="font-weight: bold;">Direct Motor-Circle Fit</h3>
+<p>I started the creation of my kinetic sculpture by ideating through and deciding that I wanted to create a spinning stage as a circle cutout on the platform. I then focused on how I would mount on my motor given this idea. I came up with the below where I laser cut the fit of the motor into the circular stage. Therefore, as the motor spun, so would the stage.</p>
+<image width="50%" height="50%" src="./try1_fusion.png" alt="Fusion script"></image>
+<image width="25%" height="25%" src="./try1_top.jpg"></image>
+<image width="25%" height="25%" src="./try1_gear.jpg"></image>
+<image width="25%" height="25%" src="./try1_motor_fit.jpg"></image>
+
+<p>I also continued this idea by trying to create a mount that I lasercutted so that I can extend the base of the motor from which I attach it to the platform. However, I found it incredibly difficult to actually lasercut precisely the alignment I needed to create the mount.</p>
+<image width="25%" height="25%" src="./try1_motor_mount.jpg"></image>
+<image width="25%" height="25%" src="./try1_motor_mount_side.jpg"></image>
+
+<h3 style="font-weight: bold;">Dowel Attempt 1: Hook and Ball</h3>
+<p>After realizing that the stage itself is not stable as a cap on the motor and that the motor mount to attach the motor to the stage (essentially having it defy gravity) is rather difficult, I decided to pivot. I created a larger box to store the circuitry for the entire sculpture. I wanted the motor to be on the base and to use a dowel to spin the stage. This involved drill pressing into the dowel and then fixing it onto the motor snuggly. From there, I glued the circular stage onto the dowel.</p>
+<image width="25%" height="25%" src="./try2_dowel_drill.jpg"></image>
+<image width="25%" height="25%" src="./try2_dowel_fit.jpg"></image>
+<image width="25%" height="25%" src="./try2_dowel_cap.jpg"></image>
+
+<p>I used this as the first iteration for my spinning sculpture of a hook, string, and ball that spun.</p>
+<image width="25%" height="25%" src="./ball_sculpture.jpg"></image>
+
+<h3 style="font-weight: bold;">Dowel Attempt 2: Two Circles</h3>
+<p>However, I found the cardboard stage too unstable. Therefore, I decided to laser cut the circular platform from thick wood. Also, I found another rectangular dowel that was also easier to drill a hole into since it fit in the vice better. I decided to also change up the sculpture itself since the previous ball on the hook was too unstable. I created the two circle design (black and white) to represent the opposing but complementary forces of the yin and yang.</p>
+<image width="25%" height="25%" src="./try3_rect_dowel.jpg"></image>
+<image width="50%" height="25%" src="./sculpture_two_rounds.jpg"></image>
+
+<h3 style="font-weight: bold;">Breadboard and Circuitry</h3>
+<p>As can be seen in the videos below, the sculptures spin in one direction, pause, then spin in the other direction. This was using the Arduino microcontroller programming that we will cover in Week 4. I wanted to use this feature so that I can have a better control of the rate at which the motor was spinning and to have the sculpture rotate in more interesting ways. However, given the assignment, I also had attempted to connect the motor through a breadboard though it wasn't incorporated in the final demo.</p>
+<p>For the breadboard, I didn't want the full speed of the motor so I added resistance. I decided to create a parallel resistor with two 18 Ohm resistors to have the total additional resistance on the circuit be 9 Ohms. I measured that the voltage drop over the two parallel resistors as 0.82 V. Using Ohm's Law, the total current in the circuit is 0.82 V/9 Ohms = 0.09 Amps</p>
+<image width="25%" height="25%" src="./circuit_measure.jpg"></image>
+<image width="25%" height="25%" src="./circuit_setup.jpg"></image>
+
+
+<h3 style="font-weight: bold;">Videos</h3>
+The videos of the two iterations of my sculptures are below!
+
+<video width="50%" controls>
+  <source src="vid_1.mp4" type="video/mp4">
+</video>
+
+<video width="50%" controls>
+  <source src="vid_2.mp4" type="video/mp4">
+</video>
+
+
+</xmp>
+</body>
+
+<script src="../strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
