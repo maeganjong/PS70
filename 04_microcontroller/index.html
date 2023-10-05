@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script> 
+
+<title>PS70: Intro to Digital Fabrication </title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="../style.css" rel="stylesheet">
+<link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Tangerine">
+</head>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script> 
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div style="align-items: left; justify-content:left;" class="container-fluid">
+    <h3 class="nav-title"> PS70: Intro to Digital Fabrication</h3>
+    <div class="navbar-nav">
+      <h4></h4>
+      <h4><a class="nav-link" href="../index.html">Home</a></h4>
+      <h4><a class="nav-link" href="../about.html">About</a></h4>
+    </div>
+  </div>
+</nav>
+
+<body>
+
+
+<xmp style="display:none;">
+<br> 
+
+#### Week 3: Microcontroller Programming
+
+<h3 style="font-weight: bold;">Buzzing Binary Lights</h3>
+
+<p>For this week, I wanted to make an easy way for someone to determine the binary of a number. So, based on the number of clicks one makes on the button within 2 seconds, the circuit will beep when it's ready to output the binary and then begin flashing one of its two lights. The top light represents a 0 and the bottom light represents a 1. The default is to flash the digits of an 8 bit long binary number. If you manage to click the button more than 255 times in 2 seconds, I unfortunately will not be able to tell you the binary representation accurately.</p>
+
+<p>The code snippet is below, or you can download it as well <a href='./Binary.ino' download >here</a>.</p>
+
+
+```cpp
+#include <ShiftRegister.h>
+
+const int ledPin0 = 10;
+const int ledPin1 = 9;
+const int buttonPin = 13;   // Replace with the actual pin your button is connected to
+const int buzzerPin = 8;
+int buttonState = 0;      // current state of the button
+int lastButtonState = LOW;  // previous state of the button
+unsigned long startTime = 0;  // the start time of the 10-second window
+unsigned long currentTime = 0;  // current time
+int buttonPressCount = 0;   // count of button presses
+bool printed = true;
+
+
+void printFullBin(int number)
+{
+  Serial.println(number);
+  for (int bit = 7; bit >= 0; bit--)
+  {
+    Serial.print(bitRead(number, bit));
+    if (bitRead(number, bit) == 0) {
+      digitalWrite(ledPin0, HIGH);
+    }
+    else {
+      digitalWrite(ledPin1, HIGH);
+    }
+    delay(1000);
+    digitalWrite(ledPin0, LOW);
+    digitalWrite(ledPin1, LOW);
+    delay(500);
+  }
+  Serial.println();
+}
+
+void setup() {
+  pinMode(buttonPin, INPUT); // Enable internal pull-up resistor
+  Serial.begin(9600); // Initialize Serial communication (for debugging)
+  delay(1000);
+}
+
+void loop() {
+  currentTime = millis(); // Get the current time
+
+  // Read the button state
+  buttonState = digitalRead(buttonPin);
+  // Serial.println(buttonState);
+
+  // Check for a button press (low to high transition)
+  if (buttonState == LOW && lastButtonState == HIGH) {
+    // Button was pressed, start the timer if it's not already running
+    if (currentTime - startTime >= 2000) {
+      startTime = currentTime;
+      buttonPressCount = 1; // Reset the button press count
+      printed = false;
+    } else {
+      buttonPressCount++; // Increment the button press count
+    }
+  }
+
+  // Update the last button state
+  lastButtonState = buttonState;
+
+  // Check if the 10-second window has elapsed
+  if (currentTime - startTime >= 2000 && !printed) {
+    // Play the buzzer
+    tone(buzzerPin, 262);
+    delay(500);
+    noTone(buzzerPin);
+    // Display the button press count and reset it
+    Serial.println(buttonPressCount);
+    printFullBin(buttonPressCount);
+    buttonPressCount = 0;
+    printed = true;
+    // Flash the LED lights
+    
+  }
+}
+
+
+```
+
+
+<p>My sketch is below:</p>
+<image width="50%" height="25%" src="./Sketch.jpeg"></image>
+
+<p>An image of my set-up in real life is below:</p>
+<image width="50%" height="25%" src="./image_arduino.jpg"></image>
+
+<p>A demo video:</p>
+<video width="50%" controls>
+    <source src="arduino_demo.mp4" type="video/mp4">
+  </video>
+
+
+</xmp>
+</body>
+
+<script src="../strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
