@@ -22,3 +22,10 @@ p {font-size: 16px;}
 .nav-link{
   color: gray;
 }
+
+.c img,
+.c video {
+  display: flex; /* Use flexbox to arrange elements side by side */
+  width: 30%; /* Adjust the width as needed */
+  height: auto; /* Maintain aspect ratio */
+}

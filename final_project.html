@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<title>PS70: Intro to Digital Fabrication </title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="./style.css" rel="stylesheet">
+
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div style="align-items: left; justify-content:left;" class="container-fluid">
+    <h3 class="nav-title"> PS70: Intro to Digital Fabrication</h3>
+    <div class="navbar-nav">
+      <h4><a class="nav-link" href="./index.html">Home</a></h4>
+      <h4><a class="nav-link" href="./about.html">About</a></h4>
+      <h4><a class="nav-link" href="./final_project.html">Final Project</a></h4>
+    </div>
+  </div>
+</nav>
+
+<body >
+
+<xmp style="display:none;">
+### Final Project
+<p>I've decided to pursue the card detecting wallet as my project!</p>
+<h3 style="font-weight: bold;">Week 5 Update: 3D Model, Timeline, and Materials</h3>
+<p>For this week, I started thinking about the 3D model for my final project and how I envision it. Because scale will likely be a challenge, I'll just make use of a larger "wallet" with a spring and the RFID attached to the far end so that the RFID sensor is pressed against the cards in the wallet.</p> 
+<image width="30%" height="20%" src="./final_proj/3d_sketch.png" alt="3D Sketch"></image>
+<p>In the sketch above, I anticipate using the extra space to attach my battery/Arduino board and button. The battery and Arduino board are so that I can program features to the RFID sesnor. The button is so that I can change the various states of this device such as "await/in use" and "set cards" which are visualized below. I plan to just use one button but program various types of clicks like double clicks and long presses.</p>
+<image width="50%" height="20%" src="./final_proj/state_diagram.jpeg" alt="State Diagram"></image>
+<p>I also compiled a list of materials that I'll need:</p>
+<ul>
+<li>Box</li>
+<li>Spring</li>
+<li>RFID Sensor</li>
+<li>Radio to notify the phone</li>
+<li>Button to change between states</li>
+<li>Battery for Arduino</li>
+</ul>
+
+
+<p>The timeline I want to reference is the following. I anticipate delays so have left the last few weeks as unscheduled:</p> 
+<ul>
+    <li>Week 6: Figure out the logic for detecting when a card is removed on Arduino</li>
+    <li>Week 7:Create the box with the spring</li>
+    <li>Week 8: Create mounts for the battery, button, Arduino board, and RFID sensor</li>
+    <li>Week 9: Code out the functionality to notify the phone</li>
+    <li>Week 10: Code out the setting stage and when to activate the general use/await on the button</li>
+    <li>Week 11: Clean up the code so that the full states are correctly linked</li>
+</ul>
+
+<p>I've also began setting up the RFID sensor and used <a href="https://arduinogetstarted.com/tutorials/arduino-rfid-nfc">this</a> as a reference. I'm able to detect the UID of cards and have expanded the starter code to print the UID of the cards until I remove the card. My current code snippet is the following:</p>
+```cpp
+    #include <SPI.h>
+    #include <MFRC522.h>
+    
+    #define SS_PIN 10
+    #define RST_PIN 5
+    
+    MFRC522 rfid(SS_PIN, RST_PIN);
+    bool cardPresent = false;
+    
+    void setup() {
+      Serial.begin(9600);
+      SPI.begin(); // init SPI bus
+      rfid.PCD_Init(); // init MFRC522
+    
+      Serial.println("Tap RFID/NFC Tag on reader");
+    }
+    
+    void loop() {
+      if (rfid.PICC_IsNewCardPresent()) { // new tag is available
+        if (!cardPresent) {
+          cardPresent = true;
+          Serial.println("Card detected.");
+        }
+        if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
+          MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+    
+          // print NUID in Serial Monitor in the hex format
+          Serial.print("UID:");
+          for (int i = 0; i < rfid.uid.size; i++) {
+            Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+            Serial.print(rfid.uid.uidByte[i], HEX);
+          }
+          Serial.println();
+    
+          // rfid.PICC_HaltA(); // halt PICC
+          byte bufferATQA[2];
+          byte bufferSize = sizeof(bufferATQA);
+          rfid.PICC_WakeupA(bufferATQA, &bufferSize);
+          rfid.PCD_StopCrypto1(); // stop encryption on PCD
+        }
+      }
+      else {
+        if (cardPresent) {
+          Serial.println("Card removed.");
+          cardPresent = false;
+        }
+      }
+    }
+    
+```
+</xmp>
+
+
+</body>
+
+<script src="./strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>

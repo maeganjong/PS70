@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script> 
+
+    
+
+<title>PS70: Intro to Digital Fabrication </title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="../style.css" rel="stylesheet">
+<link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Tangerine">
+</head>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script> 
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div style="align-items: left; justify-content:left;" class="container-fluid">
+    <h3 class="nav-title"> PS70: Intro to Digital Fabrication</h3>
+    <div class="navbar-nav">
+      <h4></h4>
+      <h4><a class="nav-link" href="../index.html">Home</a></h4>
+      <h4><a class="nav-link" href="../about.html">About</a></h4>
+      <h4><a class="nav-link" href="../final_project.html">Final Project</a></h4>
+    </div>
+  </div>
+</nav>
+
+<body>
+
+
+<xmp style="display:none;">
+<br> 
+
+#### Week 5: 3D Programming
+
+<h3 style="font-weight: bold;">3D Printing Rings</h3>
+
+<p>For this week, I wanted to make a link of rings since I was fascinated how people online were able to develop sheets of chain mail.</p>
+
+<p>My first attempt was not great since I realized with an infill of 20% and really thin rings, it was impossible to break off the supports without ruining the rings themselves.</p>
+
+<div class="c">
+    <image width="20%" height="100%" src="./Thin_Rings_Support.jpg"></image>
+    <image width="20%" height="100%" src="./Thin_Rings.jpg"></image> 
+    </div>
+<p>For my next, I increased the infill to 40% and increased the thickness of the rings. I made my test run with just two and it turned out well!</p>
+
+<div class="c">
+    <video width="25%" height="100%" controls><source src="2_Rings.mp4" type="video/mp4"></video>
+    <image width="20%" height="100%" src="./2_Rings.jpg"></image> 
+    </div>
+
+<p>After my test runs with two rings, I wanted to increase the number of links. One thing I quickly learned was that the positioning of the chains is a bit tricky. Factors I considered were how thick each ring was and how I would place multiple rings through one hoop without any overlap. I learned a neat Utility tool on Fusion 360 which checks for intersections between objects. I was able to use this to ensure that none of my rings were touching since it was difficult to know for sure just by eye.</p>
+
+<div class="c">
+    <video controls><source src="Chains.mp4" type="video/mp4"></video>
+    <image src="./Multi_Link_Supports.jpg"></image> 
+    </div>
+
+<p>The rings came out nicely but if I could change one thing, I'd want to spend more time thinking about how to place the rings so that I would use less supports and cut down on the time to free the links from the supports!</p>
+
+<p>You can download the final documents for the rings: <a href='./Chain Link.f3d' download >3D model file</a>, <a href='./Chain Links.stl' download >STL file</a>, and <a href='./Chain_Links_0.4n_0.3mm_PLA_MK3S_4h11m.gcode' download >sliced gcode file</a>.</p>
+
+<h3 style="font-weight: bold;">Scanning a Bust</h3>
+<p>I had a bit of a hard time with RevoPoint since I tried to scan everyday objects like pens, dice, glue bottle, etc. but it had a hard time tracking the point clouds. Therefore, I stuck with their provided bust and alas, it came out perfectly. The picture of the scan is below and you can downloud the obj file <a href='./bust.obj' download >here</a>.</p>
+<image width="20%" height="20%" src="./bust.png"></image>
+<h4>I have also made updates to my final project this week! Find it all on the final project page <a href='../final_project.html'>here</a>.</h4>
+<br>
+</xmp>
+</body>
+
+<script src="../strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
