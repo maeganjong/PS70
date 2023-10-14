@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<title>PS70: Intro to Digital Fabrication </title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="../style.css" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine">
+
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div style="align-items: left; justify-content:left;" class="container-fluid">
+    <h3 class="nav-title"> PS70: Intro to Digital Fabrication</h3>
+    <div class="navbar-nav">
+      <h4></h4>
+      <h4><a class="nav-link" href="../index.html">Home</a></h4>
+      <h4><a class="nav-link" href="../about.html">About</a></h4>
+      <h4><a class="nav-link" href="../final_project.html">Final Project</a></h4>
+    </div>
+  </div>
+</nav>
+
+<body>
+
+
+<xmp style="display:none;">
+<br> 
+
+#### Week 6: Input Devices
+<h3 style="font-weight: bold;">Capacitive Sensor</h3>
+
+<p>For my capacitive sensor, I tried to measure water volume by the capacitive readings given. I referenced the <a href="https://nathanmelenbrink.github.io/lab/input/capacitance/txrx.html">sample code</a> to take capacitive readings on the microcontroller and adapted the code so that we are able to read every 1 second (as opposed to continuously) using the millis function. My setup is the following:</p>
+
+<image width="50%" height="75%" src="./capacitance_cup.jpg" alt="Cup Capacitance"></image> 
+<p>I also worked on structuring the code with classes so that we could scale to multiple capicative sensors. The code is below:</p>
+
+
+<pre><code class="language-arduino">
+class CapacitanceRead {
+  public:
+    long result;
+    int analog_pin;
+    int tx_pin;
+    long interval = 1000;
+    long previousMillis = 0;
+
+    CapacitanceRead(int analog, int tx) {
+      analog_pin = analog;
+      tx_pin = tx;
+
+      pinMode(tx_pin, OUTPUT);
+    }
+
+    void read() {
+      if ((millis() - previousMillis) < interval) {
+        return;
+      }
+
+      previousMillis = millis();
+
+      int read_high;
+      int read_low;
+      int diff;
+      long int sum;
+      int N_samples = 100;    // Number of samples to take.  Larger number slows it down, but reduces scatter.
+      sum = 0;
+      long previousMillis = millis();
+      for (int i = 0; i < N_samples; i++){
+        digitalWrite(tx_pin,HIGH);              
+        read_high = analogRead(analog_pin);     
+        delayMicroseconds(100);                 
+        digitalWrite(tx_pin,LOW);               
+        read_low = analogRead(analog_pin);      
+        diff = read_high - read_low;            
+        sum += diff;                            
+      }
+      Serial.println(sum);
+    }
+};
+
+CapacitanceRead cap(A3, 4);
+
+void setup() {
+    Serial.begin(9600);
+}
+
+void loop() {
+    cap.read();
+}
+</code></pre>
+
+
+
+<p>For every line measurement of the cup, I recorded the volume and measured the capacitive values to establish the relationship between the two. From the diagram, it seems that the relationship is approximately linear. The plot is below:</p>
+<image width="50%" height="25%" src="./graph.png"></image>
+
+<p>The schematics I used was the following:</p>
+
+<image width="50%" height="75%" src="./Capacitance_Schematics.jpeg" alt="Capacitance schematics"></image> 
+
+<h3 style="font-weight: bold;">RFID Sensor</h3>
+
+<p>For my final project of reading cards in a wallet, I wanted to leverage RFID sensors. I followed <a href="https://arduinogetstarted.com/tutorials/arduino-rfid-nfc">an online guide</a> to set up the sensor. Whenever the card is detected, I wanted the light to flash, so I set up the logic for when the card is placed on the RFID, the LED is turned on. Then, I track the LED's state and turn it off when the card is removed.</p>
+
+<video controls><source src="Light_RFID.mp4" type="video/mp4"></video>
+
+<p>I designed the code to use classes and the code is below:</p>
+
+```cpp
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 10
+#define RST_PIN 5
+#define LED_PIN 2
+
+class Light {
+ public:
+   int ledPin;
+   bool ledOn;
+
+   Light(int number_pin) {
+     ledPin = number_pin;
+     ledOn = false;
+   }
+
+   void Update() {
+     ledOn = !ledOn;
+     digitalWrite(ledPin, ledOn);
+   }
+};
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+Light l1(LED_PIN);
+bool cardPresent = false;
+
+void setup() {
+ Serial.begin(9600);
+ SPI.begin(); // init SPI bus
+ rfid.PCD_Init(); // init MFRC522
+ Serial.println("Tap RFID/NFC Tag on reader");
+
+}
+
+unsigned long getID(){
+ unsigned long hex_num;
+ hex_num =  rfid.uid.uidByte[0] << 24;
+ hex_num += rfid.uid.uidByte[1] << 16;
+ hex_num += rfid.uid.uidByte[2] <<  8;
+ hex_num += rfid.uid.uidByte[3];
+ // rfid.PICC_HaltA(); // Stop reading
+ return hex_num;
+}
+
+void loop() {
+ if (rfid.PICC_IsNewCardPresent()) { // new tag is available
+   if (!cardPresent) {
+     cardPresent = true;
+     Serial.println("Card detected.");
+     l1.Update();
+   }
+   if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
+     MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+
+     // print NUID in Serial Monitor in the hex format
+     Serial.print("UID:");
+     Serial.println(getID());
+     Serial.println();
+
+     // rfid.PICC_HaltA(); // halt PICC
+     byte bufferATQA[2];
+     byte bufferSize = sizeof(bufferATQA);
+     rfid.PICC_WakeupA(bufferATQA, &bufferSize);
+     rfid.PCD_StopCrypto1(); // stop encryption on PCD
+   }
+ }
+ else {
+   if (cardPresent) {
+     Serial.println("Card removed.");
+     cardPresent = false;
+     l1.Update();
+   }
+ }
+}
+
+```
+
+<p>The schematics I used was the following:</p>
+
+<image width="50%" height="75%" src="./RFID_Schematics.jpeg" alt="RFID schematics"></image> 
+
+<h3 style="font-weight: bold;">CAD Files</h3>
+<p>We were prompted to prepare CAD files for milling week. I decided to take an image of the face of Bob from Bob's Burgers, converted it to an SVG, and imported it to Fusion 360.</p>
+<image width="50%" height="75%" src="./Bob.png" alt="Bob"></image> 
+</xmp>
+</body>
+
+<script src="../strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
