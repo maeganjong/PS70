@@ -38,15 +38,15 @@
 <div class="c">
   <image width="25%" height="100%" src="./07_mvp/mvp.jpg"></image> 
   <video width="25%" height="100%" controls><source src="./07_mvp/MVP_Demo.mp4" type="video/mp4"></video>
-  </div>
+</div>
 
 <p>The code I have as of now is below:</p>
 <pre><code class="language-arduino">
-#include <SPI.h>
+#include &lt;SPI.h&gt;
 // https://arduinogetstarted.com/tutorials/arduino-rfid-nfc
-#include <MFRC522.h>
+#include &lt;MFRC522.h&gt;
 // https://github.com/mathertel/OneButton
-#include <OneButton.h>
+#include &lt;OneButton.h&gt;
 
 #define SS_PIN 10
 #define RST_PIN 5
@@ -207,7 +207,12 @@ void loop() {
 </code></pre>
 <p>Moving forward, I want to move all of these helper functions into a Simulation class just for code clarity.</p>
 
-<p>Since the only output for this device is the buzzer, I decided to use the scope to understand how the buzzer worked. What is i Is it on a fixed clock? What's its speed? Share images and describe your findings.</p>
+<p>Since the only output for this device is the buzzer, I decided to use the scope to understand how the buzzer worked. When I plotted it, the signal was very noisy. However, it has a fixed clock at 440 microseconds. It seems that the voltage wavers from 0 V to a little over 1 V. The images of the output is below:
+
+  <div class="c">
+    <image width="25%" height="100%" src="./07_mvp/Scope_2.jpg"></image>
+    <image width="25%" height="100%" src="./07_mvp/Scope_1.jpg"></image> 
+  </div>
 
 <h3 style="font-weight: bold;">Week 5 Update: 3D Model, Timeline, and Materials</h3>
 <p>For this week, I started thinking about the 3D model for my final project and how I envision it. Because scale will likely be a challenge, I'll just make use of a larger "wallet" with a spring and the RFID attached to the far end so that the RFID sensor is pressed against the cards in the wallet.</p> 
