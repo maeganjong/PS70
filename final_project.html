@@ -4,6 +4,10 @@
 <title>PS70: Intro to Digital Fabrication </title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="./style.css" rel="stylesheet">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
 
 <nav class="navbar navbar-expand-sm navbar-light bg-light">
   <div style="align-items: left; justify-content:left;" class="container-fluid">
@@ -21,10 +25,194 @@
 <xmp style="display:none;">
 ### Final Project
 <p>I've decided to pursue the card detecting wallet as my project!</p>
+<h3 style="font-weight: bold;">Week 7 Update: MVP</h3>
+<p>For the MVP of this project, I decided to focus on the code logic. I added two new inputs/outputs in addition to the RFID sensor: the button and the buzzer. For the button, I used <a href="https://github.com/mathertel/OneButton">OneButton Library</a> to handle double clicks and single clicks so that the wallet can toggle between setting the card wallet and returning the device to AWAIT state, respectively. For the buzzer, I used previous labs to set the tone for the buzzer when I want to alert that a card has been removed from the wallet for an extended duration.</p>
+
+<p>Regarding the code structure, I set the states as I had outlined before by setting global variables to map each state to an integer for code clarity. After setting up all the inputs/outputs, in the infinite loop, I check which state it is and then direct the code to run appropriate helper functions. When the code is in the SETTING stage, it checks the card on the RFID and stores it as the reference ID that the device will look out for. When the code is in the AWAIT stage, it constantly checks if the card on the ID is the same as the reference ID. If it's not, it sets itself to the PENDING stage and starts a timer. If the timer elapses beyond the prespecified time, the device then moves to the ALARM stage. At this point, the buzzer is activated and the only way to silence it is by clicking the button or replacing the card, both of which returns the state to AWAIT.</p>
+
+<p>One issue I ran into but moved aside for this week was the difficulty for the RFID sensor to read multiple cards at once. The RFID is only able to take in one card at a time which makes detecting the state and the reference a bit challenging. Since the RFID sensor can only be dominated by one card at a time, it was hard to reason about how to handle a wallet full of cards. Therefore, for this iteration, I only focus on handling one card in the wallet.</p>
+
+<p>The setup and the current demo is included below: </p>
+<!-- <image width="25%" height="75%" src="./07_mvp/mvp.jpg" alt="MVP"></image> -->
+
+<div class="c">
+  <image width="25%" height="100%" src="./07_mvp/mvp.jpg"></image> 
+  <video width="25%" height="100%" controls><source src="./07_mvp/MVP_Demo.mp4" type="video/mp4"></video>
+  </div>
+
+<p>The code I have as of now is below:</p>
+<pre><code class="language-arduino">
+#include <SPI.h>
+// https://arduinogetstarted.com/tutorials/arduino-rfid-nfc
+#include <MFRC522.h>
+// https://github.com/mathertel/OneButton
+#include <OneButton.h>
+
+#define SS_PIN 10
+#define RST_PIN 5
+#define LED_PIN 2
+#define BUTTON_PIN 4
+#define BUZZER_PIN 2
+#define AWAIT 0
+#define SETTING 1
+#define PENDING 2
+#define ALARM 3
+
+class Light {
+  public:
+    int ledPin;
+    bool ledOn;
+
+    Light(int number_pin) {
+      ledPin = number_pin;
+      ledOn = false;
+    }
+
+    void Update() {
+      ledOn = !ledOn;
+      digitalWrite(ledPin, ledOn);
+    }
+};
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+Light l1(LED_PIN);
+int state = AWAIT;
+unsigned long reference_UID = NULL;
+unsigned long time = 0;
+
+// Button initialization
+OneButton btn = OneButton(
+  BUTTON_PIN,  // Input pin for the button
+  true,      
+  true
+);
+
+// Handler function for a single click:
+static void handleClick() {
+  state = AWAIT;
+  Serial.println("Clicked!");
+}
+
+static void doubleClick() {
+  state = SETTING;
+  Serial.println("Double Pressed!");
+}
+
+void setup() {
+  Serial.begin(9600);
+  SPI.begin(); // init SPI bus
+  rfid.PCD_Init(); // init MFRC522
+
+  // Single Click event attachment
+  btn.attachClick(handleClick);
+
+  // Double Click event attachment with lambda
+  btn.attachDoubleClick(doubleClick);
+
+  pinMode(BUZZER_PIN,OUTPUT);
+}
+
+unsigned long getID() {
+  unsigned long hex_num;
+  hex_num =  rfid.uid.uidByte[0] << 24;
+  hex_num += rfid.uid.uidByte[1] << 16;
+  hex_num += rfid.uid.uidByte[2] <<  8;
+  hex_num += rfid.uid.uidByte[3];
+  return hex_num;
+}
+
+unsigned long getRFID() {
+  if (rfid.PICC_IsNewCardPresent()) { // new tag is available
+    if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
+      MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+
+      // print UID in Serial Monitor in the hex format
+      Serial.print("UID:");
+
+      unsigned long ID = getID();
+      byte bufferATQA[2];
+      byte bufferSize = sizeof(bufferATQA);
+      rfid.PICC_WakeupA(bufferATQA, &bufferSize);
+      rfid.PCD_StopCrypto1(); // stop encryption on PCD
+
+      return ID;
+    }
+  }
+  return NULL;
+}
+
+void setRFID() {
+  reference_UID = getRFID();
+  
+  Serial.print("CHANGING REFERENCE RIGHT HERE RIGHT NOW !!! reference");
+  Serial.println(reference_UID);
+}
+
+void checkRFID() {
+  unsigned long ID = getRFID();
+  // if the RFID is not in the wallet
+  if (ID != reference_UID && reference_UID != 0) {
+    if (state == AWAIT) {
+      state = PENDING;
+      time = millis();
+    }
+  }
+  else {
+    state = AWAIT;
+  }
+}
+
+void checkTime() {
+  if((millis() - time) > 3000) {
+    state = ALARM;
+    time = millis();
+  }
+}
+
+void soundAlarm() {
+  tone(BUZZER_PIN, 262);
+}
+
+void loop() {
+  // Activate button
+  btn.tick();
+
+  // if click once - then await mode -> finished setting or alarm
+  // if click twice - then setting mode
+  // Need to make sure that the buzzer doesn't constantly go off
+  noTone(BUZZER_PIN);
+  switch (state) {
+    case AWAIT:
+      Serial.println("Awating!!");
+      checkRFID();
+      break;
+    case SETTING:
+      // Should read the current card in the wallet/on the RFID and store it
+      Serial.println("setting!!");
+      setRFID();
+      break;
+    case PENDING:
+      // Check whether we've detected the OG card yet
+      checkRFID();
+      // Check the time situation
+      checkTime();
+      break;
+    case ALARM:
+      // sound the alarm - until deactivated
+      soundAlarm();
+      checkRFID();
+      break;
+  }
+}
+</code></pre>
+<p>Moving forward, I want to move all of these helper functions into a Simulation class just for code clarity.</p>
+
+<p>Since the only output for this device is the buzzer, I decided to use the scope to understand how the buzzer worked. What is i Is it on a fixed clock? What's its speed? Share images and describe your findings.</p>
+
 <h3 style="font-weight: bold;">Week 5 Update: 3D Model, Timeline, and Materials</h3>
 <p>For this week, I started thinking about the 3D model for my final project and how I envision it. Because scale will likely be a challenge, I'll just make use of a larger "wallet" with a spring and the RFID attached to the far end so that the RFID sensor is pressed against the cards in the wallet.</p> 
 <image width="30%" height="20%" src="./final_proj/3d_sketch.png" alt="3D Sketch"></image>
-<p>In the sketch above, I anticipate using the extra space to attach my battery/Arduino board and button. The battery and Arduino board are so that I can program features to the RFID sesnor. The button is so that I can change the various states of this device such as "await/in use" and "set cards" which are visualized below. I plan to just use one button but program various types of clicks like double clicks and long presses.</p>
+<p>In the sketch above, I anticipate using the extra space to attach my battery/Arduino board and button. The battery and Arduino board are so that I can program features to the RFID sensor. The button is so that I can change the various states of this device such as "await/in use" and "set cards" which are visualized below. I plan to just use one button but program various types of clicks like double clicks and long presses.</p>
 <image width="50%" height="20%" src="./final_proj/state_diagram.jpeg" alt="State Diagram"></image>
 <p>I also compiled a list of materials that I'll need:</p>
 <ul>
@@ -40,7 +228,7 @@
 <p>The timeline I want to reference is the following. I anticipate delays so have left the last few weeks as unscheduled:</p> 
 <ul>
     <li>Week 6: Figure out the logic for detecting when a card is removed on Arduino</li>
-    <li>Week 7:Create the box with the spring</li>
+    <li>Week 7: Create the box with the spring</li>
     <li>Week 8: Create mounts for the battery, button, Arduino board, and RFID sensor</li>
     <li>Week 9: Code out the functionality to notify the phone</li>
     <li>Week 10: Code out the setting stage and when to activate the general use/await on the button</li>

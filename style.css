@@ -25,7 +25,9 @@ p {font-size: 16px;}
 
 .c img,
 .c video {
-  display: flex; /* Use flexbox to arrange elements side by side */
+  display: inline-block; /* Use flexbox to arrange elements side by side */
+  vertical-align: top;
+  grid-template-columns: repeat(3, 1fr);
   width: 30%; /* Adjust the width as needed */
   height: auto; /* Maintain aspect ratio */
 }
