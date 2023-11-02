@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<title>PS70: Intro to Digital Fabrication </title>
+
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script> 
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="../style.css" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine">
+
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div style="align-items: left; justify-content:left;" class="container-fluid">
+    <h3 class="nav-title"> PS70: Intro to Digital Fabrication</h3>
+    <div class="navbar-nav">
+      <h4></h4>
+      <h4><a class="nav-link" href="../index.html">Home</a></h4>
+      <h4><a class="nav-link" href="../about.html">About</a></h4>
+      <h4><a class="nav-link" href="../final_project.html">Final Project</a></h4>
+    </div>
+  </div>
+</nav>
+
+<body>
+
+
+<xmp style="display:none;">
+<br> 
+
+#### Week 9: Radio, WiFi, and Bluetooth
+<p>This week, I partnered with KaiLan to program two microntrollers that communicate with one another! In particular, we wanted to have the clicked button that's linked to my laptop to then control the LED that's linked to KaiLan's laptop.</p>
+
+<image width="50%" height="75%" src="./demo.png" alt="Set up"></image> 
+
+<p>We then recorded a demo of the connection working in real time!</p>
+
+<video controls><source src="run_through.mp4" type="video/mp4"></video>
+
+<p>Our code is below which we repurposed from the <a href="https://nathanmelenbrink.github.io/ps70/09_networking/index.html">ESP-NOW code</a> that was given in class.</p>
+
+<p><b>Code Running on my Laptop</b></p>
+<pre><code class="language-arduino">
+#include &lt;esp_now.h&gt;
+#include &lt;WiFi.h&gt;
+#define R_PIN 2
+#define Y_PIN 15
+#define B_PIN 14
+#define G_PIN 16
+​
+uint8_t broadcastAddress[] =  {0x58, 0xCF, 0x79, 0x01, 0x28, 0xA0};   // this is board no 1.
+​
+// Variable to store if sending data was successful
+String success;
+​
+byte incomingByte;
+byte outgoingByte;
+​
+​
+// Callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  if (status ==0){
+    success = "Delivery Success :)";
+  }
+  else{
+    success = "Delivery Fail :(";
+  }
+}
+​
+// Callback when data is received
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+  memcpy(&incomingByte, incomingData, sizeof(incomingByte));
+  Serial.print("Bytes received: ");
+  Serial.println(len);
+}
+​
+void setup() {
+  // Init Serial Monitor
+  Serial.begin(115200);
+  pinMode(R_PIN, INPUT_PULLUP);
+  pinMode(Y_PIN, INPUT_PULLUP);
+  pinMode(B_PIN, INPUT_PULLUP);
+  pinMode(G_PIN, INPUT_PULLUP);
+​
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+​
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+​
+  // Register for a callback function that will be called when data is received
+  esp_now_register_send_cb(OnDataSent);
+​
+  // Register peer
+  esp_now_peer_info_t peerInfo;
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;  
+  peerInfo.encrypt = false;
+​
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    return;
+  }
+  // Register for a callback function that will be called when data is received
+  esp_now_register_recv_cb(OnDataRecv);
+}
+​
+void loop() {
+  // Serial.println(incomingByte);
+  outgoingByte = 0;
+​
+  int r_val = digitalRead(R_PIN);
+  int y_val = digitalRead(Y_PIN);
+  int b_val = digitalRead(B_PIN);
+  int g_val = digitalRead(G_PIN);
+​
+  // SEND
+  if (r_val == 0) {
+    outgoingByte = 1;
+    Serial.println("Red!");
+  }
+  else if (y_val == 0) {
+    outgoingByte = 2;
+    Serial.println("Yellow!");
+  }
+  else if (b_val == 0) {
+    outgoingByte = 3;
+    Serial.println("Blue!");
+  }
+  else if (g_val == 0) {
+    outgoingByte = 4;
+    Serial.println("Green!");
+  }
+  
+  Serial.println("HI!");
+  Serial.println(outgoingByte);
+​
+  // Send message via ESP-NOW
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoingByte, sizeof(outgoingByte));
+​
+  if (result == ESP_OK) {
+    Serial.println("Sent with success");
+  }
+  else {
+    Serial.println("Error sending the data");
+  }
+​
+ delay(1000);
+​
+}
+</code>
+</pre>
+
+<p><b>Code Running on KaiLan's Laptop</b></p>
+<pre><code class="language-arduino">
+#include &lt;esp_now.h&gt;
+#include &lt;WiFi.h&gt;
+
+#include <esp_now.h>
+#include <WiFi.h>
+    ​
+int LEDR = 2;
+int LEDY = 3;
+int LEDG = 4;
+int LEDB = 5;
+​
+// REPLACE WITH THE MAC Address of your receiver.  Code is the same for both boards, with the exception of the following line.
+uint8_t broadcastAddress[] =  {0xC4, 0xDD, 0x57, 0xC5, 0xDC, 0xBC};    //this is board no 1.
+​
+// Variable to store if sending data was successful
+String success;
+​
+byte incomingByte;
+byte outgoingByte;
+​
+​
+// Callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+    Serial.print("\r\nLast Packet Send Status:\t");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+    if (status ==0){
+    success = "Delivery Success :)";
+    }
+    else{
+    success = "Delivery Fail :(";
+    }
+}
+​
+// Callback when data is received
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+    memcpy(&incomingByte, incomingData, sizeof(incomingByte));
+    Serial.print("Bytes received: ");
+    Serial.println(len);
+    if (*incomingData == 1) {
+    digitalWrite(LEDR, HIGH);
+    }
+    if (*incomingData == 2) {
+    digitalWrite(LEDY, HIGH);
+    }
+    if (*incomingData == 3) {
+    digitalWrite(LEDG, HIGH);
+    }
+    if (*incomingData == 4) {
+    digitalWrite(LEDB, HIGH);
+    }
+​
+}
+​
+void setup() {
+    // Init Serial Monitor
+    Serial.begin(115200);
+​
+​
+    // Set device as a Wi-Fi Station
+    WiFi.mode(WIFI_STA);
+​
+    pinMode(LEDR, OUTPUT);
+    pinMode(LEDY, OUTPUT);
+    pinMode(LEDG, OUTPUT);
+    pinMode(LEDB, OUTPUT);
+​
+    // Init ESP-NOW
+    if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+    }
+​
+    // Register for a callback function that will be called when data is received
+    esp_now_register_send_cb(OnDataSent);
+​
+    // Register peer
+    esp_now_peer_info_t peerInfo;
+    memset(&peerInfo, 0, sizeof(peerInfo));
+    memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+    peerInfo.channel = 0;  
+    peerInfo.encrypt = false;
+​
+    // Add peer        
+    if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    return;
+    }
+    // Register for a callback function that will be called when data is received
+    esp_now_register_recv_cb(OnDataRecv);
+}
+​
+void loop() {
+    Serial.println(incomingByte);
+    outgoingByte = incomingByte+1;
+​
+    // Send message via ESP-NOW
+    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoingByte, sizeof(outgoingByte));
+​
+    if (result == ESP_OK) {
+    Serial.println("Sent with success");
+    }
+    else {
+    Serial.println("Error sending the data");
+    }
+​
+​
+    delay(1000);
+    digitalWrite(LEDR, LOW);
+    digitalWrite(LEDY, LOW);
+    digitalWrite(LEDG, LOW);
+    digitalWrite(LEDB, LOW);
+​
+}
+</code>
+</pre>
+
+
+</xmp>
+</body>
+
+<script src="../strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
