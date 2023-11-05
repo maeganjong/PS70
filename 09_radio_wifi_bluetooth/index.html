@@ -1,16 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<head>
 <title>PS70: Intro to Digital Fabrication </title>
 
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<!-- and it's easy to individually load additional languages -->
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/go.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<!-- <link rel="stylesheet" href="/path/to/styles/default.min.css">
+<script src="/path/to/highlight.min.js"></script>
+<script>hljs.highlightAll();</script> -->
+
+<!-- <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/arduino-light.min.css">
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script>
-<script>hljs.initHighlightingOnLoad();</script> 
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/arduino.min.js"></script> -->
+
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script> -->
+<!-- <script>hljs.highlightAll();</script> -->
+
+<!-- <script>hljs.initHighlightingOnLoad();</script>  -->
+
+<!-- <script>
+  document.addEventListener('DOMContentLoaded', (event) => {
+      document.querySelectorAll('pre code').forEach((el) => {
+        hljs.highlightElement(el);
+      });
+    });</script> -->
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="../style.css" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine">
+</head>
 
 <nav class="navbar navbar-expand-sm navbar-light bg-light">
   <div style="align-items: left; justify-content:left;" class="container-fluid">
@@ -24,13 +49,17 @@
   </div>
 </nav>
 
+
 <body>
 
 
-<xmp style="display:none;">
+<xmp>
 <br> 
 
 #### Week 9: Radio, WiFi, and Bluetooth
+<h5>I made another update to my final project this week! Find it all on the final project page <a href='../final_project.html'>here</a>.</h5>
+
+<h5>Partner Project:</h5>
 <p>This week, I partnered with KaiLan to program two microntrollers that communicate with one another! In particular, we wanted to have the clicked button that's linked to my laptop to then control the LED that's linked to KaiLan's laptop.</p>
 
 <image width="50%" height="75%" src="./demo.png" alt="Set up"></image> 
@@ -42,7 +71,7 @@
 <p>Our code is below which we repurposed from the <a href="https://nathanmelenbrink.github.io/ps70/09_networking/index.html">ESP-NOW code</a> that was given in class.</p>
 
 <p><b>Code Running on my Laptop</b></p>
-<pre><code class="language-arduino">
+<pre><code class="language-cpp">
 #include &lt;esp_now.h&gt;
 #include &lt;WiFi.h&gt;
 #define R_PIN 2

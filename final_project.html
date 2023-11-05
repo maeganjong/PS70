@@ -25,6 +25,248 @@
 <xmp style="display:none;">
 ### Final Project
 <p>I've decided to pursue the card detecting wallet as my project!</p>
+<h3 style="font-weight: bold;">Week 9 Update: Incorporating ESP32 and Messaging Notification</h3>
+<p>To address the long-term goal of the project, I didn't want a buzzer to go off everytime you lost your wallet so I switched the board over to ESP32 and had the project message you to alarm you of your missing card instead.</p>
+
+<p>I referenced <a href="https://randomnerdtutorials.com/esp32-send-messages-whatsapp/">the documentation on sending a message</a>. I set up my Whatsapp with the Chat Bot and ported the setup code in the documentation into my current code.</p>
+
+<p>Also, I switched from the Arduino Uno to the ESP32 C3 Dev Board which required figuring out which ports to use for MOSI and MISO of the RFID. My current pins from the RFID to the ESP32 are as follows:</p>
+<ul>
+  <li>GND to GND</li>
+  <li>RST to 8</li>
+  <li>3.3V to 3.3V</li>
+  <li>SDA to 10</li>
+  <li>SCK to 4</li>
+  <li>MOSI to 6</li>
+  <li>MISO to 5</li>
+</ul>
+  
+<p>After adjusting those, I was able to have the same setup work but notifications done through a message. A demo is below:</p>
+
+<video width="50%" height="100%" controls><source src="./09_radio_wifi_bluetooth/esp_rfid.mp4" type="video/mp4"></video>
+
+<p>My code at this moment is below:</p>
+<pre><code>
+#include &lt;SPI.h&gt;
+// https://arduinogetstarted.com/tutorials/arduino-rfid-nfc
+#include &lt;MFRC522.h&gt;
+// https://github.com/mathertel/OneButton
+#include &lt;OneButton.h&gt;
+
+#include &lt;WiFi.h&gt;  
+#include &lt;HTTPClient.h&gt;
+#include &lt;UrlEncode.h&gt;
+
+const char* ssid = "MAKERSPACE";
+const char* password = "12345678";
+
+String phoneNumber = "+18479126446";
+String apiKey = "6571141";
+
+#define SS_PIN 10
+#define RST_PIN 8
+#define LED_PIN 2
+#define BUTTON_PIN 3
+#define BUZZER_PIN 2
+#define AWAIT 0
+#define SETTING 1
+#define PENDING 2
+#define ALARM 3
+
+void sendMessage(String message){
+
+  // Data to send with HTTP POST
+  String url = "https://api.callmebot.com/whatsapp.php?phone=" + phoneNumber + "&apikey=" + apiKey + "&text=" + urlEncode(message);    
+  HTTPClient http;
+  http.begin(url);
+
+  // Specify content-type header
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.POST(url);
+  if (httpResponseCode == 200){
+    Serial.print("Message sent successfully");
+  }
+  else{
+    Serial.println("Error sending the message");
+    Serial.print("HTTP response code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  // Free resources
+  http.end();
+}
+
+class Light {
+  public:
+    int ledPin;
+    bool ledOn;
+
+    Light(int number_pin) {
+      ledPin = number_pin;
+      ledOn = false;
+    }
+
+    void Update() {
+      ledOn = !ledOn;
+      digitalWrite(ledPin, ledOn);
+    }
+};
+
+
+class Simulation {
+  public:
+    enum States {await, setting, pending, alarm};
+    unsigned long curr_time = 0;
+    int state = AWAIT;
+    bool cardPresent = false;
+    
+    Simulation() {
+
+    }
+};
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+Light l1(LED_PIN);
+Simulation simulation();
+// 0 is await
+// 1 is setting
+// 2 is pending
+// 3 is alarm
+int state = AWAIT;
+unsigned long reference_UID = NULL;
+unsigned long curr_time = 0;
+
+// Button initialization
+OneButton btn = OneButton(
+  BUTTON_PIN,  // Input pin for the button
+  true,      
+  true
+);
+
+// Handler function for a single click:
+static void handleClick() {
+  state = AWAIT;
+}
+
+static void doubleClick() {
+  state = SETTING;
+}
+
+void setup() {
+  Serial.begin(9600);
+
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  SPI.begin(); // init SPI bus
+  rfid.PCD_Init(); // init MFRC522
+
+  // Single Click event attachment
+  btn.attachClick(handleClick);
+
+  // Double Click event attachment with lambda
+  btn.attachDoubleClick(doubleClick);
+
+  pinMode(BUZZER_PIN,OUTPUT);
+}
+
+unsigned long getID() {
+  unsigned long hex_num;
+  hex_num =  rfid.uid.uidByte[0] << 24;
+  hex_num += rfid.uid.uidByte[1] << 16;
+  hex_num += rfid.uid.uidByte[2] <<  8;
+  hex_num += rfid.uid.uidByte[3];
+  return hex_num;
+}
+
+unsigned long getRFID() {
+  if (rfid.PICC_IsNewCardPresent()) { // new tag is available
+    if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
+      MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+
+      unsigned long ID = getID();
+      byte bufferATQA[2];
+      byte bufferSize = sizeof(bufferATQA);
+      rfid.PICC_WakeupA(bufferATQA, &bufferSize);
+      rfid.PCD_StopCrypto1(); // stop encryption on PCD
+
+      return ID;
+    }
+  }
+  return NULL;
+}
+
+void setRFID() {
+  reference_UID = getRFID();
+}
+
+void checkRFID() {
+  unsigned long ID = getRFID();
+  // if the RFID is not in the wallet
+  // prevents freaking out from added card
+  if (ID != reference_UID && reference_UID != 0) {
+    if (state == AWAIT) {
+      state = PENDING;
+      curr_time = millis();
+    }
+  }
+  else {
+    state = AWAIT;
+  }
+}
+
+void checkTime() {
+  if((millis() - curr_time) > 3000) {
+    state = ALARM;
+    curr_time = millis();
+  }
+}
+
+void soundAlarm() {
+  sendMessage("Your card is missing!");
+}
+
+
+void loop() {
+  // Activate button
+  btn.tick();
+
+  // if click once - then await mode -> finished setting or alarm
+  // if click twice - then setting mode
+  // Need to make sure that the buzzer doesn't constantly go off
+  switch (state) {
+    case AWAIT:
+      checkRFID();
+      break;
+    case SETTING:
+      // Should read the current card in the wallet/on the RFID and store it
+      setRFID();
+      break;
+    case PENDING:
+      // Check whether we've detected the OG card yet
+      checkRFID();
+      // Check the time situation
+      checkTime();
+      break;
+    case ALARM:
+      // sound the alarm - until deactivated
+      soundAlarm();
+      checkRFID();
+      break;
+  }
+}
+    
+</code></pre>
+
 <h3 style="font-weight: bold;">Week 7 Update: MVP</h3>
 <p>For the MVP of this project, I decided to focus on the code logic. I added two new inputs/outputs in addition to the RFID sensor: the button and the buzzer. For the button, I used <a href="https://github.com/mathertel/OneButton">OneButton Library</a> to handle double clicks and single clicks so that the wallet can toggle between setting the card wallet and returning the device to AWAIT state, respectively. For the buzzer, I used previous labs to set the tone for the buzzer when I want to alert that a card has been removed from the wallet for an extended duration.</p>
 
