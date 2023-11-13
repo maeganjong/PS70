@@ -25,7 +25,7 @@
 <xmp style="display:none;">
 ### Final Project
 <p>I've decided to pursue the card detecting wallet as my project!</p>
-<h3 style="font-weight: bold;">Week 10 Update: Moving Away from RFID and Read Multiple Cards</h3>
+<h3 style="font-weight: bold;">Week 10 Update: Moving Away from RFID and Towards Reading Multiple Cards</h3>
 <p>After more conversation with the teaching staff, I realized that the RFID approach will not be feasible to expand to many cards given the hefty pricetag for a simultaneous RFID sensor. Instead, I pivoted to creating a circuit that is completed by copper plates. The idea is that each card will have a copper strip and its own slot that's connected to a particular pin on the ESP 32 Dev Board. When the card is in the slot, the circuit for that slot would be complete, and we could detect which slots have or don't have a card on the Dev Board.</p>
 
 <p>For the programming, I expanded the initial approach for multiple variables so that each slot has its own state (await, pending, or alarm) and will notify independently when the card is missing after the designated duration through the chat bot. I was also able to simplify the programming so that I can simultaneously preset each of the slots as either having a card present or not. My current set up includes two slots as seen below:</p>
