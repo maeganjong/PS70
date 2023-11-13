@@ -25,6 +25,181 @@
 <xmp style="display:none;">
 ### Final Project
 <p>I've decided to pursue the card detecting wallet as my project!</p>
+<h3 style="font-weight: bold;">Week 10 Update: Moving Away from RFID and Read Multiple Cards</h3>
+<p>After more conversation with the teaching staff, I realized that the RFID approach will not be feasible to expand to many cards given the hefty pricetag for a simultaneous RFID sensor. Instead, I pivoted to creating a circuit that is completed by copper plates. The idea is that each card will have a copper strip and its own slot that's connected to a particular pin on the ESP 32 Dev Board. When the card is in the slot, the circuit for that slot would be complete, and we could detect which slots have or don't have a card on the Dev Board.</p>
+
+<p>For the programming, I expanded the initial approach for multiple variables so that each slot has its own state (await, pending, or alarm) and will notify independently when the card is missing after the designated duration through the chat bot. I was also able to simplify the programming so that I can simultaneously preset each of the slots as either having a card present or not. My current set up includes two slots as seen below:</p>
+
+<image width="100%" height="75%" src="./10_machine_building/Copper.jpg" alt="CNC"></image>
+
+<p>Notice how the circuit is completed with the "card" present to complete the circuit on the top pair of copper plates.</p>
+<p>My code is below as well:</p>
+<pre><code>
+  // https://github.com/mathertel/OneButton
+  #include <OneButton.h>
+  #include <WiFi.h>    
+  #include <HTTPClient.h>
+  #include <UrlEncode.h>
+  
+  const char* ssid = "MAKERSPACE";
+  const char* password = "12345678";
+  
+  String phoneNumber = "+18479126446";
+  String apiKey = "6571141";
+  
+  // States of the machine
+  #define AWAIT 0
+  #define SETTING 1
+  #define PENDING 2
+  #define ALARM 3
+  
+  // Pins for the button and cards
+  #define BUTTON_PIN 0
+  
+  unsigned long curr_time = 0;
+  // Reads 1 when disconnected, 0 when connected
+  bool is_setting = false;
+  int card_pins[2] = {1, 2};
+  int reference[2] = {1, 1};
+  int states[2] = {AWAIT};
+  unsigned long missing_times[2] = {NULL};
+  #define array_size sizeof(card_pins)/sizeof(int)
+  
+  // Button initialization
+  OneButton btn = OneButton(
+    BUTTON_PIN,  // Input pin for the button
+    true,      
+    true
+  );
+  
+  // Handler function for a single click:
+  static void handleClick() {
+    is_setting = false;
+  }
+  
+  static void doubleClick() {
+    is_setting = true;
+  }
+  
+  void sendMessage(String message){
+    // Data to send with HTTP POST
+    String url = "https://api.callmebot.com/whatsapp.php?phone=" + phoneNumber + "&apikey=" + apiKey + "&text=" + urlEncode(message);    
+    HTTPClient http;
+    http.begin(url);
+  
+    // Specify content-type header
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    
+    // Send HTTP POST request
+    int httpResponseCode = http.POST(url);
+    if (httpResponseCode == 200){
+      Serial.print("Message sent successfully");
+    }
+    else{
+      Serial.println("Error sending the message");
+      Serial.print("HTTP response code: ");
+      Serial.println(httpResponseCode);
+    }
+  
+    // Free resources
+    http.end();
+  }
+  
+  void setup() {
+    Serial.begin(9600);
+  
+    for (int i=0; i<array_size; i++) {
+      pinMode(card_pins[i], INPUT_PULLUP);
+    }
+  
+    // WiFi Setup
+    WiFi.begin(ssid, password);
+    Serial.println("Connecting");
+    while(WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("");
+    Serial.print("Connected to WiFi network with IP Address: ");
+    Serial.println(WiFi.localIP());
+  
+    // Single Click event attachment
+    btn.attachClick(handleClick);
+  
+    // Double Click event attachment with lambda
+    btn.attachDoubleClick(doubleClick);
+  }
+  
+  void checkState(int i) {
+    Serial.print("READ ");
+    Serial.print(String(digitalRead(card_pins[i])) + " ");
+    Serial.println(reference[i]);
+    Serial.println((digitalRead(card_pins[i]) != reference[i]));
+  
+    if ((digitalRead(card_pins[i]) != reference[i]) && (reference[i] != 1)) {
+      if (states[i] == AWAIT) {
+        states[i] = PENDING;
+        missing_times[i] = millis();
+      }
+    }
+    else {
+      states[i] = AWAIT;
+    }
+  }
+  
+  void checkTime(int i) {
+    if ((states[i] == PENDING) && (millis() - missing_times[i]) > 3000) {
+      states[i] = ALARM;
+      missing_times[i] = millis();
+    }
+  }
+  
+  void setState() {
+    Serial.println("SETTING!");
+    for (int i = 0; i < array_size; i++) {
+      reference[i] = digitalRead(card_pins[i]);
+    }
+  }
+  
+  void soundAlarm(int id) {
+    sendMessage("Your card in slot " + String(id) + " is missing!");
+    states[id] = PENDING;
+    missing_times[id] = millis();
+  }
+  
+  
+  void loop() {
+    // Activate button
+    btn.tick();
+  
+    if (is_setting) {
+      setState();
+    }
+    else {
+      for (int i = 0; i < array_size; i++ ) {
+        Serial.println("STATE " + String(i) + " " + String(states[i]));
+        if (states[i] == AWAIT) {
+          Serial.println("Awating!!");
+          checkState(i);
+        }
+        else if (states[i] == PENDING) {
+          // Check whether we've detected the OG card yet
+          Serial.println("Pending!!");
+          Serial.println(curr_time);
+          checkState(i);
+          // Check the time situation
+          checkTime(i);
+        }
+        else if (states[i] == ALARM) {
+          soundAlarm(i);
+        }
+      }
+    }
+  }  
+</code></pre>
+
+
+
 <h3 style="font-weight: bold;">Week 9 Update: Incorporating ESP32 and Messaging Notification</h3>
 <p>To address the long-term goal of the project, I didn't want a buzzer to go off everytime you lost your wallet so I switched the board over to ESP32 and had the project message you to alarm you of your missing card instead.</p>
 
@@ -483,7 +658,7 @@ void loop() {
 </ul>
 
 <p>I've also began setting up the RFID sensor and used <a href="https://arduinogetstarted.com/tutorials/arduino-rfid-nfc">this</a> as a reference. I'm able to detect the UID of cards and have expanded the starter code to print the UID of the cards until I remove the card. My current code snippet is the following:</p>
-```cpp
+<pre><code>
     #include <SPI.h>
     #include <MFRC522.h>
     
@@ -533,7 +708,7 @@ void loop() {
       }
     }
     
-```
+  </pre></code>
 </xmp>
 
 
