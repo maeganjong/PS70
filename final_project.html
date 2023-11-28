@@ -23,25 +23,30 @@
 <body >
 
 <xmp style="display:none;">
-### Final Project
+<h1 style="font-weight: bold;">Final Project</h1> 
 <p>I've decided to pursue the card detecting wallet as my project!</p>
 
 <h3 style="font-weight: bold;">Week 11 Update: Constructing the Wallet</h3>
-<p>This week I focused on constructing the wallet. I first worked with burlap or canvas material. Then, I realized that the cloth made sticking the copper plates rather difficult. Instead I decided to use gaffer tape so that the surface could be more firm to adhere to the copper plate.</p>
+<p>This week I focused on constructing the wallet. I first worked with burlap or canvas material. Then, I realized that the cloth made sticking the copper plates rather difficult. Instead I decided to use gaffer tape so that the surface could be more firm to adhere to the copper plate. However, the gaffer tape was peeling after a few days.</p>
 
-<p>Goals</p>
-<ul>
-  <li>Sauder the wires on the breadboard</li>
-  <li>Create the plates on the wallet</li>
-  <li>Reach goal - get resistors so I can have multiple cards per slot</li>
-</ul>
+<div class="c">
+  <image src="./final_proj/Canvas_Fold.jpg"></image> 
+  <image src="./final_proj/Canvas_Top.jpg"></image> 
+  <image src="./final_proj/Gaffer.jpg"></image> 
+  </div>
+
+<p>I ended up pivoting to using duct tape which made the application of the copper plates a lot easier and the material was quite durable. I then continued to solidify the connection between the wire and the copper plates by saudering. I did a test trial with the breadboard and confirmed that it was working properly.</p>
+
+<image width="25%" height="75%" src="./final_proj/Big_Duct.jpg" alt="Duct Tape MVP"></image>
+
+<p>I then opted to scale down the prototype and utilize a ESP32 Xiao. I saudered the connections and integrated it with the wallet.</p>
 
 <h3 style="font-weight: bold;">Week 10 Update: Moving Away from RFID and Towards Reading Multiple Cards</h3>
 <p>After more conversation with the teaching staff, I realized that the RFID approach will not be feasible to expand to many cards given the hefty pricetag for a simultaneous RFID sensor. Instead, I pivoted to creating a circuit that is completed by copper plates. The idea is that each card will have a copper strip and its own slot that's connected to a particular pin on the ESP 32 Dev Board. When the card is in the slot, the circuit for that slot would be complete, and we could detect which slots have or don't have a card on the Dev Board.</p>
 
 <p>For the programming, I expanded the initial approach for multiple variables so that each slot has its own state (await, pending, or alarm) and will notify independently when the card is missing after the designated duration through the chat bot. I was also able to simplify the programming so that I can simultaneously preset each of the slots as either having a card present or not. My current set up includes two slots as seen below:</p>
 
-<image width="100%" height="75%" src="./10_machine_building/Copper.jpg" alt="CNC"></image>
+<image width="50%" height="75%" src="./10_machine_building/Copper.jpg" alt="CNC"></image>
 
 <p>Notice how the circuit is completed with the "card" present to complete the circuit on the top pair of copper plates. I also maintain the presence of the button to change through the states.</p>
 <p>My code is below as well:</p>
