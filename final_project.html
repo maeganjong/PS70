@@ -26,24 +26,226 @@
 <h1 style="font-weight: bold;">Final Project</h1> 
 <p>I've decided to pursue the card-detecting wallet as my project!</p>
 <h2 style="font-weight: bold;">Completed Product</h3>
-<h3 style="font-weight: bold;">Motivation</h3>
-<p>I once lost my credit card and driver's license without losing my wallet. I wanted to make a card-detecting wallet so that the wallet can notify the user when a card has slipped out of the wallet longer than the typical duration of using the card.</p>
-<h3 style="font-weight: bold;">Hardware</h3>
-<h4 style="font-weight: bold;">Card Slots</h4>
+<video width="50%" height="100%" controls><source src="./drawsquare_test.mov" type="video/mp4"></video>
 
-<h4 style="font-weight: bold;">Wiring</h4>
+<div class="c">
+  <image src="./final_proj/Wallet_1.jpg"></image> 
+  <image src="./final_proj/Wallet_2.jpg"></image> 
+  <image src="./final_proj/Wallet_3.jpg"></image> 
+</div>
+<h3 style="font-weight: bold;">Motivation for this Project</h3>
+<p>I thought of this project because I once lost my credit card and driver's license without losing my wallet. The idea of the card-detecting wallet is so that the wallet can notify the user when a card has slipped out of the wallet longer than the typical duration of using the card. This way, users can be sure that they have everything with them at all times!</p>
 
+<h3 style="font-weight: bold;">How to Use</h3>
+<p>Currently the wallet only has two slots and for greatest accuracy, only one card should be placed in each slot. To prepare your card for the wallet, place a slight piece of copper on one side of the card like below.</p> 
+<image width="25%" height="75%" src="./final_proj/card.jpg" alt="Card with Copper"></image>
+
+<p>To begin using the wallet, click twice on the button in the back until the light is turned on. This is the "setting" state so the wallet can know which slots have cards.</p>
+
+<p>Then put your cards into the wallet. Once your cards are placed securely inside, click the button once until the light is turned off. Now, the wallet is alert and will notify you if any of your cards go missing. If you take one of your cards out of your wallet longer than three seconds, the wallet will message you on WhatsApp that your card in a particular slot (either the top slot 0 or the bottom slot 1) is missing.</p>
+
+<p>You could click the back button once if you will return the card back to the slot shortly. Otherwise, if you realize you've lost your card for good, double press the button on the back to reset your wallet and to prevent the wallet from further notifying you of the missing card. In that case, I wish you best of luck with finding your missing card!</p>
+<h3 style="font-weight: bold;">Construction</h3>
+<p>The design of the wallet is that each of the slots is an incomplete circuit until a card with a piece of copper is placed inside. I have the wiring so that each slot corresponds to a particular pin that reads whether the circuit is complete. I used copper plates to extend the connection of each end of the pin and ground to either side of the slot so that, when the card is placed, the circuit can be effectively completed. The microcontroller will then continuously read whether the circuit is complete (card is present) or incomplete (card is not there).</p>
+<p>I also scaled down the size of the circuitry by using a <a href="https://www.seeedstudio.com/Seeed-XIAO-ESP32C3-p-5431.html">Xiao ESP32C3</a>. To ensure portable power, I also used a <a href="https://www.amazon.com/KBT-3-7V-500mAh-Li-Polymer-Battery/dp/B0BJPG4B72?th=1">LiPo battery</a> soldered to the back of the Xiao. To ensure users could change the state of the wallet, I also included a button and light to control the wallet.</p>
+<p>For the actual body of the wallet, I utilized duct tape to not only bring back the duct tape wallet craze but also to simplify the copper plate connection with the slot. If I had more time and better sewing skills, I would want to elevate the materials used for the body of the wallet!</p>
 <h3 style="font-weight: bold;">Software</h3>
 <h4 style="font-weight: bold;">Design</h4>
 <p>I designed the code so that each slot works independently from another. Each slot has its own state (await, pending, or alarm) and will notify independently when the card is missing after the designated duration through the chat bot. I was also able to simplify the programming so that I can simultaneously preset each of the slots as either having a card present or not.</p>
 <h4 style="font-weight: bold;">Code</h4>
+<p>Below is the code I wrote for this project. It can also be downloaded <a href='./final_proj/Code.ino' download >here</a> as well. I had referenced the <a href="https://github.com/mathertel/OneButton">OneButton Library</a> so that my single button can have single click and double click functionality. I also used the <a href="https://randomnerdtutorials.com/esp32-send-messages-whatsapp/">CallMeBot API</a> so that my wallet could connect to WiFi and notify users of their card missing by sending a message to the user's phone.</p>
+<pre><code>
+#include &lt;OneButton.h&gt;
+#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+#include &lt;UrlEncode.h&gt;
+
+const char* ssid = "MAKERSPACE";
+const char* password = "12345678";
+
+String phoneNumber = "insert number";
+String apiKey = "insert API key";
+
+// States of the machine
+#define AWAIT 0
+#define SETTING 1
+#define PENDING 2
+#define ALARM 3
+
+// Pins for the button and cards
+#define BUTTON_PIN D7
+
+#define LIGHT_PIN D6
+
+unsigned long curr_time = 0;
+// Reads 1 when disconnected, 0 when connected
+bool is_setting = false;
+int card_pins[2] = {2, 3};
+int reference[2] = {1, 1};
+int states[2] = {AWAIT};
+unsigned long missing_times[2] = {NULL};
+#define array_size sizeof(card_pins)/sizeof(int)
+
+// Button initialization
+OneButton btn = OneButton(
+  BUTTON_PIN,  // Input pin for the button
+  false,      
+  true
+);
+
+// Handler function for a single click:
+static void handleClick() {
+  is_setting = false;
+}
+
+static void doubleClick() {
+  is_setting = true;
+}
+
+void sendMessage(String message){
+  // Data to send with HTTP POST
+  String url = "https://api.callmebot.com/whatsapp.php?phone=" + phoneNumber + "&apikey=" + apiKey + "&text=" + urlEncode(message);    
+  HTTPClient http;
+  http.begin(url);
+
+  // Specify content-type header
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.POST(url);
+
+  // Free resources
+  http.end();
+}
+
+void setup() {
+  pinMode(BUTTON_PIN, INPUT);
+
+
+  pinMode(LIGHT_PIN, OUTPUT);
+
+
+  for (int i=0; i<array_size; i++) {
+    pinMode(card_pins[i], INPUT_PULLUP);
+  }
+
+  // WiFi Setup
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  // Single Click event attachment
+  btn.attachClick(handleClick);
+
+  // Double Click event attachment with lambda
+  btn.attachDoubleClick(doubleClick);
+}
+
+void checkState(int i) {
+  if ((digitalRead(card_pins[i]) != reference[i]) && (reference[i] != 1)) {
+    if (states[i] == AWAIT) {
+      states[i] = PENDING;
+      missing_times[i] = millis();
+    }
+  }
+  else {
+    states[i] = AWAIT;
+  }
+}
+
+void checkTime(int i) {
+  if ((states[i] == PENDING) && (millis() - missing_times[i]) > 3000) {
+    states[i] = ALARM;
+    missing_times[i] = millis();
+  }
+}
+
+void setState() {
+  for (int i = 0; i < array_size; i++) {
+    reference[i] = digitalRead(card_pins[i]);
+  }
+}
+
+void soundAlarm(int id) {
+  sendMessage("Your card in slot " + String(id) + " is missing!");
+  states[id] = PENDING;
+  missing_times[id] = millis();
+}
+
+
+void loop() {
+  // Activate button
+  btn.tick();
+
+  if (is_setting) {
+    setState();
+
+    analogWrite(LIGHT_PIN,  255);
+  }
+  else {
+
+    analogWrite(LIGHT_PIN,  0);
+    for (int i = 0; i < array_size; i++ ) {
+      if (states[i] == AWAIT) {
+        checkState(i);
+      }
+      else if (states[i] == PENDING) {
+        // Check whether we've detected the card yet
+        checkState(i);
+        // Check the time situation
+        checkTime(i);
+      }
+      else if (states[i] == ALARM) {
+        soundAlarm(i);
+      }
+    }
+  }
+}
+</code></pre>
 
 <h2 style="font-weight: bold;">Weekly Updates</h2>
+
+<h3 style="font-weight: bold;">Week 14 Update: Finalizing the Wallet</h3>
+<p>I began this week by adding the light bulb so that users could know when the wallet is in the "setting" state. I adjusted the code so that it would update the light at the appropriate state. Next, I wanted the wallet to be battery-powered. However, the most elegant solution was on the other side of the Xiao, requiring either removing the soldered connections or creating a new board. Since the light was slightly haphazardly placed, I decided to create a new board.</p>
+
+<image width="25%" height="75%" src="./final_proj/old_board.jpg" alt="First Board"></image>
+
+<p>As I was figuring out the new board, I took an (unsuccessful) detour to designing and printing and SVG PCB board that had the LED, button, and Xiao. I designed it using <a href="https://leomcelroy.com/svg-pcb/">Leo McElroy's SVG PCB creator</a>. Below on the left was the board I designed then on the right is the simplified and converted version to print on the Roland.</p>
+
+<div class="c">
+  <image src="./final_proj/small_button.svg"></image>
+  <image src="./final_proj/small_button.png"></image> 
+</div>
+<!-- <image width="25%" height="75%" src="./final_proj/small_button.png" alt="SVG PCB Board"></image>
+<image width="25%" height="75%" src="./final_proj/small_button.svg" alt="SVG PCB Board"></image> -->
+
+<p>However, when I tried to printing it on the viny cutter, I was unable to avoid the copper plating from sliding.</p>
+
+<image width="25%" height="75%" src="./final_proj/vinyl_copper.jpg" alt="Viny Cuts"></image>
+
+<p>Therefore, I decided to pivot back to using protoboards. I reassembled a new board with general reorganizing of wires and a few notable changes:</p>
+<ul>
+  <li>I soldered connections to the back of the Xiao (the ports for the positive and negative ends of a battery) and to socket headers so that I can plug in and out my LiPo Battery.</li>
+  <li>I changed the LED bulb to a single color to simplify the wiring and since multiple colors was not needed.</li>
+  <li>I connected the button to the 3.3V pin instead of 5V since battery power does not work with 5V.</li>
+</ul>
+
+<p>I then covered up the inner workings of the wallet a bit.</p>
+
+<image width="25%" height="75%" src="./final_proj/before_after.jpg" alt="Before and After"></image>
+
+<p>I also then sealed the sides of the wallet and the front to complete the look!</p>
+<div class="c">
+  <image src="./final_proj/Wallet_1.jpg"></image> 
+  <image src="./final_proj/Wallet_2.jpg"></image> 
+  <image src="./final_proj/Wallet_3.jpg"></image> 
+</div>
+
 <h3 style="font-weight: bold;">Weeks 11-13 Update: Constructing the Wallet</h3>
 <p>This week I focused on constructing the wallet. I first worked with burlap or canvas material. Then, I realized that the cloth made sticking the copper plates rather difficult. Instead I decided to use gaffer tape so that the surface could be more firm to adhere to the copper plate. However, the gaffer tape was peeling after a few days.</p>
 
 <div class="c">
-  <image src="./final_proj/Canvas_Fold.jpg"></image> 
+  <image src="./final_proj/Canvas_Fold.jpg"></image>
   <image src="./final_proj/Canvas_Top.jpg"></image> 
   <image src="./final_proj/Gaffer.jpg"></image> 
 </div>
